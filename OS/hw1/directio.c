@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
 	double time;
 	struct stat sb;
 	struct timeval start, end;
+	int size[] = { 4, 16, 64, 256, 1024 };
 
 	static char buf[1024*1024] __attribute__ ((__aligned__ (4096)));
 
@@ -59,12 +60,12 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
-	w_s = 2 * 1024;
-
+	// Re-write with O_DIRECT and at aligned spots.
 	for (j = 0; j < 5; j++) {
-		w_s *= 2;
+		w_s = 1024 * size[j];
 
 		blocks = ((128 * BUFF_SIZE) / w_s);
+		printf("w_s: %d\n", w_s);
 
 		gettimeofday(&start, NULL);
 
@@ -91,6 +92,8 @@ int main(int argc, char** argv) {
 		printf("%lf\n", time);
 
 	}
+	
+	// Re-write with O_DIRECT and at aligned spots.
 
 	close(fd);
 	return 0;

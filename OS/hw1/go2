@@ -1,0 +1,3 @@
+rm *.o
+gcc cypher.c -o cypher.o
+./cypher.o tests/test_in.txt tests/test_key.txt tests/test_out.txt

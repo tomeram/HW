@@ -1,0 +1,1 @@
+./cypher.o tests/test_out.txt tests/test_key.txt tests/res.txt

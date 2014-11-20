@@ -1,3 +1,4 @@
+clear
 rm *.o *.txt
 gcc directio.c -o directio.o
 ./directio.o test.txt

@@ -7,13 +7,14 @@
 
 #define BUFF_SIZE 1024*1024
 
+void write_func(int, char[], char[], int);
+
+int size[] = { 4, 16, 64, 256, 1024 };
+int w_s = BUFF_SIZE;
 
 int main(int argc, char** argv) {
-	int fd, n, i, j, w_s = BUFF_SIZE, blocks, seconds, useconds;
-	double time;
+	int fd, n, i;
 	struct stat sb;
-	struct timeval start, end;
-	int size[] = { 4, 16, 64, 256, 1024 };
 
 	static char buf[1024*1024] __attribute__ ((__aligned__ (4096)));
 
@@ -60,26 +61,60 @@ int main(int argc, char** argv) {
 		return 0;
 	}
 
+	// Re-write with O_DIRECT and at Aligned spots.
+	printf("-----Aligned-----\n\n");
+	write_func(fd, buf, argv[1], 0);
+
+	printf("\n-----Unligned-----\n\n");
+	write_func(fd, buf, argv[1], 1);
+
+	close(fd);
+	fd = open(argv[1], O_RDWR);
+
+	printf("\n-----Aligned no O_DIRECT-----\n\n");
+	write_func(fd, buf, argv[1], 1);
+	
 	// Re-write with O_DIRECT and at aligned spots.
+
+	close(fd);
+	return 0;
+}
+
+
+void write_func(int fd, char buf[], char path[], int mod) {
+	int i, j, blocks, seconds, useconds, seek_res, f_size;
+	double time, res;
+
+	struct timeval start, end;
+	struct stat sb;
+
+	stat(path, &sb);
+
+	f_size = (int)sb.st_size;
+
+	printf("w_s\t|time\t\t|throughput\n");
+
 	for (j = 0; j < 5; j++) {
 		w_s = 1024 * size[j];
 
 		blocks = ((128 * BUFF_SIZE) / w_s);
-		printf("w_s: %d\n", w_s);
+		printf("%dkb\t|", size[j]);
 
 		gettimeofday(&start, NULL);
 
-		printf("# of blocks: %d\n", blocks);
-
 		for(i = 1; i < blocks; i++) {
-			if(lseek(fd, ((random() % blocks) * w_s), SEEK_SET) < 0) {
-				printf("seek error\n");
+			if (mod == 0)
+				seek_res = lseek(fd, ((random() % blocks) * w_s), SEEK_SET);
+			else
+				seek_res = lseek(fd, (random() % f_size), SEEK_SET);
+			if(seek_res < 0) {
+				printf("\nseek error\n");
 				close(fd);
-				return 0;
+				return;
 			}
 			if (write(fd, buf, w_s) < 0) {
-				printf("write error\n");
-				return 0;
+				printf("\nwrite error\n");
+				return;
 			}
 		}
 
@@ -89,12 +124,10 @@ int main(int argc, char** argv) {
 		useconds = end.tv_usec - start.tv_usec;
 		time = seconds + useconds/1000000.0;
 
-		printf("%lf\n", time);
+		printf("%lf\t|", time);
 
+		// Throughput
+		res = (((double)w_s * blocks)/(BUFF_SIZE * time));
+		printf("%lf\tMB/s\n", res);
 	}
-	
-	// Re-write with O_DIRECT and at aligned spots.
-
-	close(fd);
-	return 0;
 }

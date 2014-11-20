@@ -3,7 +3,7 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#define BUFF_SIZE 1024*1024
+#define BUFF_SIZE 1024*4
 #define MIN(X,Y) ((X) < (Y) ? (X) : (Y))
 
 int main(int argc, char** argv) {
@@ -43,7 +43,7 @@ int main(int argc, char** argv) {
 	input_end = lseek(fd_in, 0, SEEK_END);
 	key_end = lseek(fd_key, 0, SEEK_END);
 
-	// Return to file beginnig and check for errors
+	// Return to file begining and check for errors
 	if (lseek(fd_in, 0, SEEK_SET) < 0 || input_end < 0 || lseek(fd_key, 0, SEEK_SET) < 0 || key_end < 0) {
 		printf("Error: canot find input file end\n");
 		close(fd_in);
@@ -68,30 +68,38 @@ int main(int argc, char** argv) {
 		write_num = 0;
 
 		// Fill write buffer with all the read data from input file
-		while(write_num < read_in) {
+		while(0 < read_in) {
 			for (i = 0; i < MIN(read_in, read_key); i++) {
-				buf_out[i] = buf_in[i] ^ buf_key[i];
-				write_num++;
+				buf_out[write_num + i] = buf_in[write_num + i] ^ buf_key[i];
 			}
 
-			if (read_key < read_in) {
-				if (pos_key + read_key == key_end)
+			write_num += MIN(read_in, read_key);
+
+			if (read_key <= read_in) {
+				if (pos_key + read_key >= key_end) {
 					// Reached EOF -> go to start
-					lseek(fd_key, 0, SEEK_SET);
-				else {
+					pos_key = 0;
+				} else {
 					pos_key += read_key;
-					lseek(fd_key, pos_key, SEEK_SET);
 				}
+
+				lseek(fd_key, pos_key, SEEK_SET);
 				
-				read_key = read(fd_key, &buf_key, read_in - read_key);
 				read_in -= read_key;
+				read_key = read(fd_key, &buf_key, read_in);
 			}
+//			printf("wn: %d, ri: %d, rk: %d, pk: %d, ke: %d\n", write_num, read_in, read_key, pos_key, key_end);
 		}
 		
-		pos_key += read_key;
-		
 		write(fd_out, buf_out, write_num);
-		
+
+		pos_key += read_key;
+
+		if (pos_key + read_key >= key_end) {
+			// Reached EOF -> go to start
+			pos_key = 0;
+		}
+
 		lseek(fd_in, pos_in, SEEK_SET);
 		lseek(fd_key, pos_key, SEEK_SET);
 	} while (pos_in < input_end);

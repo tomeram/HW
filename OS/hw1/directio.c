@@ -92,13 +92,13 @@ void write_func(int fd, char buf[], char path[], int mod) {
 
 	f_size = (int)sb.st_size;
 
-	printf("w_s\t|time\t\t|throughput\n");
+	printf("w_s\ttime\tthroughput\n");
 
 	for (j = 0; j < 5; j++) {
 		w_s = 1024 * size[j];
 
 		blocks = ((128 * BUFF_SIZE) / w_s);
-		printf("%dkb\t|", size[j]);
+		printf("%dkb\t", size[j]);
 
 		gettimeofday(&start, NULL);
 
@@ -124,7 +124,7 @@ void write_func(int fd, char buf[], char path[], int mod) {
 		useconds = end.tv_usec - start.tv_usec;
 		time = seconds + useconds/1000000.0;
 
-		printf("%lf\t|", time);
+		printf("%lf\t", time);
 
 		// Throughput
 		res = (((double)w_s * blocks)/(BUFF_SIZE * time));

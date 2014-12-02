@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 
 	printf("\n-----Aligned no O_DIRECT-----\n\n");
 	write_func(fd, buf, argv[1], 1);
-	
+
 	// Re-write with O_DIRECT and at aligned spots.
 
 	close(fd);
